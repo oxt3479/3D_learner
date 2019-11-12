@@ -1,70 +1,73 @@
+import numpy as np
 import torch
 import torch.nn as nn
+import torchvision.models as models
 import torch.nn.functional as F
+import torch.utils.model_zoo as model_zoo
+
+class ResNetMultiImageInput(models.ResNet):
+    def __init__(self, num_input_images):
+        super().__init__(models.resnet.BasicBlock, [2, 2, 2, 2])
+        block = models.resnet.BasicBlock
+        layers = [2,2,2,2]
+        self.inplanes = 64
+        self.conv1 = nn.Conv2d(
+            num_input_images*3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+                
+                
+def resnet_multiimage_input(num_layers=18, pretrained=False, num_input_images=1):
+    """Constructs a ResNet model.
+    Args:
+        num_layers (int): Number of resnet layers. Must be 18 or 50
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        num_input_images (int): Number of frames stacked as input
+    """
+    assert num_layers in [18, 50], "Can only run with 18 or 50 layer resnet"
+    #blocks = {18: [2, 2, 2, 2], 50: [3, 4, 6, 3]}[num_layers]
+    #block_type = {18: models.resnet.BasicBlock, 50: models.resnet.Bottleneck}[num_layers]
+    model = ResNetMultiImageInput(num_input_images=num_input_images)
+
+    if pretrained:
+        loaded = model_zoo.load_url(models.resnet.model_urls['resnet{}'.format(num_layers)])
+        loaded['conv1.weight'] = torch.cat(
+            [loaded['conv1.weight']] * num_input_images, 1) / num_input_images
+        model.load_state_dict(loaded)
+    return model
+
 
 class depthencoder(nn.Module):
-    def __init__(self):
+    """Pytorch module for a resnet encoder
+    """
+    def __init__(self, num_input_images=3):
         super().__init__()
-        encode = []
-        DEVICE = torch.device("cuda:0")
-        relu = nn.ReLU(True)
-        pool = nn.MaxPool2d(2)
-        
-        encode.append(nn.Sequential(nn.Conv2d(1, 32, 3, padding=1), relu, pool, nn.BatchNorm2d(32)))
-        encode.append(nn.Sequential(nn.Conv2d(32, 64, 3, padding=1), relu, pool, nn.BatchNorm2d(64)))
-        encode.append(nn.Sequential(nn.Conv2d(64, 128, 3, padding=1), relu, pool, nn.BatchNorm2d(128)))
-        encode.append(nn.Sequential(nn.Conv2d(128, 256, 3, padding=1), relu, pool, nn.BatchNorm2d(256)))
-        encode.append(nn.Sequential(nn.Conv2d(256, 256, 3, padding=1), relu, nn.BatchNorm2d(256)))
-        
-        self.encoders = []
-        self.encoders.append(nn.Sequential(*encode).to(DEVICE)) # for n
-        self.encoders.append(nn.Sequential(*encode).to(DEVICE)) # for n-1 & n+1
-        #self.encoders.append(nn.Sequential(*encode).to(DEVICE)) # for D(n-1) & D(n+1)
-        
-        decode = []
-        decode.append(nn.Sequential(nn.Conv2d(256*3, 256, 3, padding = 1), relu, nn.BatchNorm2d(256)))
-        decode.append(nn.Sequential(nn.ConvTranspose2d(256*4, 128, 3, stride=2, \
-                                                     padding=1, output_padding=1), relu, nn.BatchNorm2d(128)))
-        decode.append(nn.Sequential(nn.ConvTranspose2d(128*4, 64, 3, stride=2, \
-                                                     padding=1, output_padding=1), relu, nn.BatchNorm2d(64)))
-        decode.append(nn.Sequential(nn.ConvTranspose2d(64*4, 32, 3, stride=2, \
-                                                     padding=1, output_padding=1), relu, nn.BatchNorm2d(32)))
-        decode.append(nn.Sequential(nn.ConvTranspose2d(32*4, 1, 3, stride=2, \
-                                                     padding=1, output_padding=1)))
-        self.decoder = nn.Sequential(*decode).to(DEVICE)
-        todepth = []
-        todepth.append(nn.ConvTranspose2d(128, 1, 3, padding = 1).to(DEVICE))
-        todepth.append(nn.ConvTranspose2d(64, 1, 3, padding = 1).to(DEVICE))
-        todepth.append(nn.ConvTranspose2d(32, 1, 3, padding = 1).to(DEVICE))
-        self.todepth = todepth # Layers to convert intermediate results into maps
-        '''
-        transform = []
-        transform.append(nn.Sequential(nn.Conv3d(1, 32, 3), relu))
-        transform.append(nn.Sequential(nn.Conv2d(32, 1, 3), relu))
-        
-        self.transformer = nn.Sequential(*transform)
-        '''    
-    def forward(self, x1, x2, x3):
-        xout = []
-        inputs = [x1,x2,x3]
-        skips = [[],[],[]]
-        for i in range(3):
-            x = inputs[i]
-            for layer in self.encoders[i-1]: #Encoder 2 used for n-1 and n+1 (x1,x3)
-                x = layer(x)
-                skips[i].append(x)
-        x = skips[-1][-1]
-        for i, layer in enumerate(self.decoder):
-            for j, encoder in enumerate(skips):
-                if j == len(skips)-1 and i == 0: break
-                x = torch.cat((x,encoder[-(i+1)]),1)
-            x = layer(x)
-            if(i > 0):
-                if(i == 4):
-                    xout.append(x)
-                else:
-                    #depth_get = nn.Sequential(self.todepth[:i-1])
-                    #xout.append(depth_get(x))
-                    xout.append(self.todepth[i-1](x))
-        skips = []
-        return xout
+
+        self.num_ch_enc = np.array([64, 64, 128, 256, 512])
+
+        self.encoder = resnet_multiimage_input(pretrained=True, num_input_images=num_input_images)
+
+    def forward(self, input_image):
+        self.features = []
+        x = (input_image - 0.45) / 0.225
+        x = self.encoder.conv1(x)
+        x = self.encoder.bn1(x)
+        self.features.append(self.encoder.relu(x))
+        self.features.append(self.encoder.layer1(self.encoder.maxpool(self.features[-1])))
+        self.features.append(self.encoder.layer2(self.features[-1]))
+        self.features.append(self.encoder.layer3(self.features[-1]))
+        self.features.append(self.encoder.layer4(self.features[-1]))
+
+        return self.features
