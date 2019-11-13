@@ -61,7 +61,7 @@ class DepthDecoder(nn.Module):
             x = self.convs[("upconv", i, 0)](x)
             x = [upsample(x)]
             if self.use_skips and i > 0:
-                if i==4: x[-1] = x[-1][:,:,:,:45] # For 720 input, prevents rounding error at lowest res
+                #if i==4: x[-1] = x[-1][:,:,:,:45] # For 720 input, prevents rounding error at lowest res
                 x += [input_features[i - 1]]
             x = torch.cat(x, 1)
             x = self.convs[("upconv", i, 1)](x)

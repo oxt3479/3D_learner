@@ -1,7 +1,8 @@
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# Code taken from monodepth 1, small modofications made.
+
 
 class MonodepthLoss(nn.modules.Module):
     def __init__(self, n=4, SSIM_w=0.85, disp_gradient_w=1.0, lr_w=1.0):
@@ -20,7 +21,7 @@ class MonodepthLoss(nn.modules.Module):
             ratio = 2 ** (i + 1)
             nh = h // ratio
             nw = w // ratio
-            scaled_imgs.insert(0,nn.functional.interpolate(img,
+            scaled_imgs.append(nn.functional.interpolate(img,
                                size=[nh, nw], mode='bilinear',
                                align_corners=True))
         return scaled_imgs
@@ -45,9 +46,10 @@ class MonodepthLoss(nn.modules.Module):
                     height, 1).type_as(img)
         y_base = torch.linspace(0, 1, height).repeat(batch_size,
                     width, 1).transpose(1, 2).type_as(img)
+
         # Apply shift in X direction
         x_shifts = disp[:, 0, :, :]  # Disparity is passed in NCHW format with 1 channel
-        flow_field = torch.stack((x_base + 2*x_shifts - 1, y_base), dim=3) # CHANGE: for sigmoid input
+        flow_field = torch.stack((x_base + x_shifts, y_base), dim=3)
         # In grid_sample coordinates are assumed to be between -1 and 1
         output = F.grid_sample(img, 2*flow_field - 1, mode='bilinear',
                                padding_mode='zeros')
@@ -156,7 +158,7 @@ class MonodepthLoss(nn.modules.Module):
         image_loss_right = [self.SSIM_w * ssim_right[i]
                             + (1 - self.SSIM_w) * l1_right[i]
                             for i in range(self.n)]
-        image_loss = sum(image_loss_left)# + image_loss_right)
+        image_loss = sum(image_loss_left + image_loss_right)
 
         # L-R Consistency
         lr_left_loss = [torch.mean(torch.abs(right_left_disp[i]
@@ -179,4 +181,4 @@ class MonodepthLoss(nn.modules.Module):
         self.image_loss = image_loss
         self.disp_gradient_loss = disp_gradient_loss
         self.lr_loss = lr_loss
-        return image_loss#loss
+        return loss

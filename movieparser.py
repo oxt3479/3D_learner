@@ -4,50 +4,6 @@ from PIL import Image
 from numpy import *
 from torchvision import transforms
 
-def getframeset_old(frames, images):
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225])
-    preprocess = transforms.Compose([
-        #transforms.Resize(256),
-        #transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        ])#normalize])
-    imageLNm = []
-    imageLN = []
-    imageLNp = []
-    imageRNm = []
-    imageRN = []
-    imageRNp = []
-    for frame in frames:
-        LNm = Image.open('left/skyscraper/'+images[frame-2])
-        LN = Image.open('left/skyscraper/'+images[frame-1])
-        LNp = Image.open('left/skyscraper/'+images[frame])
-        RNm = Image.open('right/skyscraper/'+images[frame-2][0:-4]+'_R.jpg')
-        RN = Image.open('right/skyscraper/'+images[frame-1][0:-4]+'_R.jpg')
-        RNp = Image.open('right/skyscraper/'+images[frame][0:-4]+'_R.jpg')
-        LinNm = preprocess(LNm).view(-1,3,1280,720).to(DEVICE)
-        LinN = preprocess(LN).view(-1,3,1280,720).to(DEVICE)
-        LinNp = preprocess(LNp).view(-1,3,1280,720).to(DEVICE)
-        RoutNm = preprocess(RNm).view(-1,3,1280,720).to(DEVICE)
-        RoutN = preprocess(RN).view(-1,3,1280,720).to(DEVICE)
-        RoutNp = preprocess(RNp).view(-1,3,1280,720).to(DEVICE)
-        imageLNm.append(LinNm)
-        imageLN.append(LinN)
-        imageLNp.append(LinNp)
-        imageRNm.append(RoutNm)
-        imageRN.append(RoutN)
-        imageRNp.append(RoutNp)
-    out1 = torch.cat(imageLNm,0)
-    out2 = torch.cat(imageLN,0)
-    out3 = torch.cat(imageLNp,0)
-    out4 = torch.cat(imageRNm,0)
-    out5 = torch.cat(imageRN,0)
-    out6 = torch.cat(imageRNp,0)
-    return out1, out2, out3, out4, out5, out6
-
-
-
 def getframeset(frames, images):
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
