@@ -131,7 +131,7 @@ class get_disp(nn.Module):
         p2d = (p, p, p, p)
         x = self.conv1(F.pad(x, p2d))
         x = self.normalize(x)
-        return (0.3*2.0) * (self.sigmoid(x) - 0.5)
+        return 0.3 * (self.sigmoid(x) - 0.5)
     # CHANGED to permit negative value outputs for image regions behind
     # The focal plane
 
