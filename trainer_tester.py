@@ -13,8 +13,6 @@ import time
 import os
 from monodepthloss import MonodepthLoss
 from depthnet import *
-#from depthencoder import depthencoder 
-#from depth_decoder import *
 
 DEVICE = torch.device("cuda:0")
 # %%
@@ -39,7 +37,7 @@ data = build_data("numpy_img/")
 
 # %%
 mean = []
-n = 12
+n = 20
 # N is batch number, i.e. number of frames per itteration
 epochs = 10
 
@@ -50,11 +48,11 @@ def test_model(testing_indeces):
     testing_indeces: [(int) npy file index in data directory, [([int])frame indeces]]
     returns: calculated loss
     '''
+    val_mean = []
     with torch.no_grad(): 
-        val_mean = []
         for testing_index in testing_indeces:
-            random_num = random.randint(1,16) # Sample ~1000 samples (so variance matches between testing and training means)
-            if random_num == 1: # (Only 1/16th of the training data is tested, randomly)
+            random_num = random.randint(1,160) # Sample ~100 samples (so variance matches between testing and training means)
+            if random_num == 1: # (Only 1/160th of the training data is tested, randomly)
                 # Take the images out of the data variable and apply simple transformation
                 inputLEFT, inputRIGHT = get_input_arrays(testing_index)
                 # Use the left image to generate a loss
@@ -124,13 +122,13 @@ for epoch in range(epochs):
         loss = loss_function(output,[inputLEFT.view(-1,3,256,640), inputRIGHT.view(-1,3,256,640)])
         loss.backward()
         mean.append(loss.item())
-        if j % 100 == 0:
+        if j+1 % 100 == 0:
             trueloss = test_model(testing_indeces)
             f.write(f"{round(sum(mean)/len(mean),5)}, {trueloss}\n")
             f.flush()
             mean = []
             # Record the average training loss over time
-        if j % 10000 == 0:
+        if j+1 % 10000 == 0:
             thetime = int(time.time())
             torch.save(encoderdecoder.state_dict(), f"state_dicts/encoderdecoder-{thetime}")
             # Save the weights to resume training from
