@@ -1,4 +1,4 @@
-Simulate training by executing train_tester.pynb
+Simulate training by executing trainer_tester.py
 
 Student project WIP
 

@@ -182,3 +182,4 @@ class MonodepthLoss(nn.modules.Module):
         self.disp_gradient_loss = disp_gradient_loss
         self.lr_loss = lr_loss
         return loss
+        

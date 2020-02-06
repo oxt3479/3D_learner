@@ -21,7 +21,7 @@ DEVICE = torch.device("cuda:0")
 encoderdecoder = ResnetModel(3).to(DEVICE)
 optimizer = optim.Adam(encoderdecoder.parameters(),lr=0.001)
 loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(DEVICE)
-encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1580939114_9'))
+# encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1580939114_9'))
 
 def build_data(directory):
     '''Creates memmap objects of all npy
@@ -82,7 +82,7 @@ def get_data_indeces():
                 training_indeces.append([number, frame_set])
                 # Make last 10% testing to ensure novelty
     # REMOVES +95% OF TRAINING DATA::: (TESTING) TODO: remove next line
-    training_indeces = training_indeces[0:749]
+    # TODO remove this comment, training_indeces = training_indeces[0:749]
     random.shuffle(training_indeces)
     return training_indeces, testing_indeces
 
@@ -124,10 +124,8 @@ for epoch in range(epochs):
         loss = loss_function(output,[inputLEFT.view(-1,3,256,640), inputRIGHT.view(-1,3,256,640)])
         loss.backward()
         mean.append(loss.item())
-        # j += 1
         if j % 100 == 0:
-            # TODO: Remove trueloss = test_model(testing_indeces)
-            trueloss = 0
+            trueloss = test_model(testing_indeces)
             f.write(f"{round(sum(mean)/len(mean),5)}, {trueloss}\n")
             f.flush()
             mean = []
