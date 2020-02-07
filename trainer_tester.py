@@ -14,32 +14,20 @@ import os
 from monodepthloss import MonodepthLoss
 from depthnet import *
 
-DEVICE = torch.device("cuda:0")
-# %%
-encoderdecoder = ResnetModel(3).to(DEVICE)
-optimizer = optim.Adam(encoderdecoder.parameters(),lr=0.001)
-loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(DEVICE)
-# encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1580939114_9'))
+#%%
 
 def build_data(directory):
     '''Creates memmap objects of all npy
     files in the given directory. For successful utilization 
-    they should contain:
-    TODO'''
+    the directory should contain numpy files created with 
+    mov2frames.py and frames2nparray.py,
+    directory should ONLY contain these files.'''
     data = []
     for file in os.listdir(directory):
         numpy_file = np.load(directory+file, allow_pickle=True, mmap_mode = 'r+')
         data.append(numpy_file)
     return data
 
-
-data = build_data("numpy_img/")
-
-# %%
-mean = []
-n = 20
-# N is batch number, i.e. number of frames per itteration
-epochs = 10
 
 def test_model(testing_indeces):
     '''Function takes testing_indeces that
@@ -79,8 +67,6 @@ def get_data_indeces():
             else:
                 training_indeces.append([number, frame_set])
                 # Make last 10% testing to ensure novelty
-    # REMOVES +95% OF TRAINING DATA::: (TESTING) TODO: remove next line
-    # TODO remove this comment, training_indeces = training_indeces[0:749]
     random.shuffle(training_indeces)
     return training_indeces, testing_indeces
 
@@ -109,6 +95,18 @@ def display_results(movie, frame):
     plt.show()
     return None
 
+
+DEVICE = torch.device("cuda:0")
+encoderdecoder = ResnetModel(3).to(DEVICE)
+optimizer = optim.Adam(encoderdecoder.parameters(),lr=0.001)
+loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(DEVICE)
+# encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1580939114_9'))
+
+data = build_data("numpy_img/")
+mean = []
+n = 32
+# N is batch number, i.e. number of frames per itteration
+epochs = 10
 
 #%%
 f= open(f"logs/results-{int(time.time())}.txt","w+")
