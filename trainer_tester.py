@@ -15,15 +15,15 @@ from monodepthloss import MonodepthLoss
 from depthnet import *
 
 #%%
-class trainer_tester():
+class trainer_tester:
     def __init__(self):
         super().__init__()
         self.DEVICE = torch.device("cuda:0")
-        self.encoderdecoder = ResnetModel(3).to(DEVICE)
-        self.optimizer = optim.Adam(encoderdecoder.parameters(),lr=0.001)
-        self.loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(DEVICE)
+        self.encoderdecoder = ResnetModel(3).to(self.DEVICE)
+        self.optimizer = optim.Adam(self.encoderdecoder.parameters(),lr=0.001)
+        self.loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(self.DEVICE)
         self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1581235814_0'))
-        self.data = build_data("numpy_img/")
+        self.data = self.build_data("numpy_img/")
         self.n = 32
         # N is batch number, i.e. number of frames per itteration
         self.epochs = 10
@@ -55,10 +55,10 @@ class trainer_tester():
                 random_num = random.randint(1,160) # Sample ~100 samples (so variance matches between testing and training means)
                 if random_num == 1: # (Only 1/160th of the training data is tested, randomly)
                     # Take the images out of the data variable and apply simple transformation
-                    inputLEFT, inputRIGHT = get_input_arrays(testing_index)
+                    inputLEFT, inputRIGHT = self.get_input_arrays(testing_index)
                     # Use the left image to generate a loss
-                    output = encoderdecoder(inputLEFT.view(-1,3,256,640))
-                    val_loss = loss_function(output,[inputLEFT.view(-1,3,256,640), inputRIGHT.view(-1,3,256,640)])
+                    output = self.encoderdecoder(inputLEFT.view(-1,3,256,640))
+                    val_loss = self.loss_function(output,[inputLEFT.view(-1,3,256,640), inputRIGHT.view(-1,3,256,640)])
                     val_mean.append(val_loss.item())
         return round(sum(val_mean)/len(val_mean),5)
 
@@ -73,8 +73,8 @@ class trainer_tester():
         for number, array in enumerate(data):
             frame_numbers = list(range(len(array)))
             random.shuffle(frame_numbers)
-            for i in range(0, len(frame_numbers), n):
-                frame_set = frame_numbers[i:i+n]
+            for i in range(0, len(frame_numbers), self.n):
+                frame_set = frame_numbers[i:i+self.n]
                 random.shuffle(frame_set)
                 if i >= len(frame_numbers)*.9:
                     testing_indeces.append([number, frame_set])
@@ -104,7 +104,7 @@ class trainer_tester():
         with torch.no_grad():
             imageLEFT = torch.from_numpy(data[movie][frame,0]).type(torch.cuda.FloatTensor)
             inputLEFT = torch.div(imageLEFT, 255).permute(2,0,1)
-            output = encoderdecoder(inputLEFT.view(-1,3,256,640))
+            output = self.encoderdecoder(inputLEFT.view(-1,3,256,640))
         plt.imshow(imageLEFT[:,:,0].view(256,640).cpu(), 'gray')
         plt.show()
         plt.imshow(output[0][0,0,:,:].view(256, 640).cpu().detach().numpy())
@@ -125,9 +125,9 @@ class trainer_tester():
         f= open(f"logs/results-{int(time.time())}.txt","w+")
         for epoch in range(epochs):
             print("Epoch: "+ str(epoch+1))
-            training_indeces, testing_indeces = get_data_indeces()
+            training_indeces, testing_indeces = self.get_data_indeces()
             for j, training_index in enumerate(tqdm(training_indeces)):
-                inputLEFT, inputRIGHT = get_input_arrays(training_index)
+                inputLEFT, inputRIGHT = self.get_input_arrays(training_index)
                 encoderdecoder.zero_grad()
                 output = encoderdecoder(inputLEFT.view(-1,3,256,640))
                 loss = loss_function(output,[inputLEFT.view(-1,3,256,640), inputRIGHT.view(-1,3,256,640)])
@@ -135,7 +135,7 @@ class trainer_tester():
                 mean.append(loss.item())
                 print(j)
                 if j % 100 == 0:
-                    trueloss = test_model(testing_indeces)
+                    trueloss = self.test_model(testing_indeces)
                     f.write(f"{round(sum(mean)/len(mean),5)}, {trueloss}\n")
                     f.flush()
                     mean = []
@@ -152,7 +152,7 @@ class trainer_tester():
 
 def main():
     network = trainer_tester()
-    trainer_tester.train()
+    network.train()
 
 if __name__ == "__main__":
     main()
