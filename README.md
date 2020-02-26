@@ -4,7 +4,7 @@ PRELIMINARY RESULTS 2 26 2020:
 
 ![Wide Resident Evil Map](/examples/03_residentevilwide_test.png)
 
-![Many Subjects in order Map](/examples/05_manysubjects_test.png)
+![Many Subjects in order Map](/examples/06_threeactors_test.png)
 
 Simulate training by executing trainer_tester.py
 
