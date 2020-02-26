@@ -22,7 +22,7 @@ class trainer_tester:
         self.encoderdecoder = ResnetModel(3).to(self.DEVICE)
         self.optimizer = optim.Adam(self.encoderdecoder.parameters(),lr=0.001)
         self.loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(self.DEVICE)
-        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1581235814_0'))
+        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1582560607'))
         self.data = self.build_data("numpy_img/")
         self.n = 32
         # N is batch number, i.e. number of frames per itteration
@@ -149,7 +149,7 @@ class trainer_tester:
             torch.save(encoderdecoder.state_dict(), f"state_dicts/encoderdecoder-{thetime}_{epoch}")
         f.close()
 
-
+#%%
 def main():
     network = trainer_tester()
     network.train()
