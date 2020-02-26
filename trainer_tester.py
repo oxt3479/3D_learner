@@ -97,7 +97,7 @@ class trainer_tester:
         return inputLEFT, inputRIGHT
 
 
-    def display_results(self, movie, frame):
+    def display_results(self, movie, frame, name=None):
         '''Graphs two arrays, of network input and output 
         specified by a npy index number movie, and frame integer.'''
         data = self.data
@@ -105,9 +105,23 @@ class trainer_tester:
             imageLEFT = torch.from_numpy(data[movie][frame,0]).type(torch.cuda.FloatTensor)
             inputLEFT = torch.div(imageLEFT, 255).permute(2,0,1)
             output = self.encoderdecoder(inputLEFT.view(-1,3,256,640))
-        plt.imshow(imageLEFT[:,:,0].view(256,640).cpu(), 'gray')
-        plt.show()
-        plt.imshow(output[0][0,0,:,:].view(256, 640).cpu().detach().numpy())
+        result = output[0][0,0,:,:].view(256, 640).cpu().detach().numpy()
+        b = (result - np.min(result))/np.ptp(result)
+        
+        fig = plt.figure(figsize=(16,4))
+        fig.patch.set_visible(False)
+
+        ax0 = fig.add_subplot(121)
+        ax0.imshow(imageLEFT[:,:,:].view(256,640,3).cpu()/255)
+
+        ax1 = fig.add_subplot(122)
+        ax1.imshow(b)
+
+        plt.tight_layout()
+        ax0.axis('off')
+        ax1.axis('off')
+        if name != None:
+            plt.savefig(f'examples/{name}_test.png')
         plt.show()
         return None
 
