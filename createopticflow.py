@@ -4,7 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-img = 3000
+img = 2980
 mov = 8
 
 movie = os.listdir('./left')
@@ -18,8 +18,7 @@ img = cv2.imread(path+image,  cv2.IMREAD_GRAYSCALE)
 prev = cv2.imread(path+previous,  cv2.IMREAD_GRAYSCALE) 
 
 output = cv2.calcOpticalFlowFarneback(img, prev, None, \
-    0.5, 3, 20, 3, 5, 1.2, 0) 
-
+    0.5, 2, 15, 1, 5, 1.1, 0) 
 
 plt.imshow(output[:,:,0])
 plt.show()
