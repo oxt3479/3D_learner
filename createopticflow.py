@@ -2,28 +2,30 @@
 import cv2
 import numpy as np
 import os
-
-def build_data(directory):
-    '''Creates memmap objects of all npy
-    files in the given directory. For successful utilization 
-    the directory should contain numpy files created with 
-    mov2frames.py and frames2nparray.py,
-    directory should ONLY contain these files.'''
-    data = []
-    for file in os.listdir(directory):
-        numpy_file = np.load(directory+file, allow_pickle=True, mmap_mode = 'r+')
-        data.append(numpy_file)
-    return data
-
-
-data = build_data("numpy_img/")
-
-output = cv2.calcOpticalFlowFarneback(data[3][0,0,:,:,0], \
-    data[3][0,1,:,:,0], None, 0.5, 3, 15, 3, 5, 1.2, 0) 
-
 import matplotlib.pyplot as plt
 
+img = 3000
+mov = 8
+
+movie = os.listdir('./left')
+path = f'./left/{movie[mov]}/'
+
+image = os.listdir(path)[img]
+previous = os.listdir(path)[img-1]
+  
+# Using cv2.imread() method 
+img = cv2.imread(path+image,  cv2.IMREAD_GRAYSCALE) 
+prev = cv2.imread(path+previous,  cv2.IMREAD_GRAYSCALE) 
+
+output = cv2.calcOpticalFlowFarneback(img, prev, None, \
+    0.5, 3, 20, 3, 5, 1.2, 0) 
+
+
 plt.imshow(output[:,:,0])
+plt.show()
+plt.imshow(output[:,:,1])
+plt.show()
+plt.imshow(img, 'gray')
 plt.show()
 
 # %%
