@@ -1,4 +1,4 @@
-PRELIMINARY RESULTS 2 26 2020:
+PRELIMINARY RESULTS 2 26 2020 (~4 Epochs):
 
 ![Transformer Map](/examples/01_transformer_test.png)
 
