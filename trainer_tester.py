@@ -13,6 +13,7 @@ import time
 import os
 from monodepthloss import MonodepthLoss
 from depthnet import *
+from PIL import Image
 
 #%%
 class trainer_tester:
@@ -22,7 +23,7 @@ class trainer_tester:
         self.encoderdecoder = ResnetModel(3).to(self.DEVICE)
         self.optimizer = optim.Adam(self.encoderdecoder.parameters(),lr=0.001)
         self.loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(self.DEVICE)
-        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1583031157'))
+        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1582697104_4'))
         self.data = self.build_data("numpy_img/")
         self.n = 32
         # N is batch number, i.e. number of frames per itteration
@@ -106,7 +107,6 @@ class trainer_tester:
             inputLEFT = torch.div(imageLEFT, 255).permute(2,0,1)
             output = self.encoderdecoder(inputLEFT.view(-1,3,256,640))
         result = output[0][0,0,:,:].view(256, 640).cpu().detach().numpy()
-        b = (result - np.min(result))/np.ptp(result)
         
         fig = plt.figure(figsize=(16,4))
         fig.patch.set_visible(False)
@@ -115,7 +115,7 @@ class trainer_tester:
         ax0.imshow(imageLEFT[:,:,:].view(256,640,3).cpu()/255)
 
         ax1 = fig.add_subplot(122)
-        ax1.imshow(np.clip(result, -.01, .01))
+        ax1.imshow(np.clip(result, -.02, .02))
 
         plt.tight_layout()
         ax0.axis('off')
@@ -124,6 +124,26 @@ class trainer_tester:
             plt.savefig(f'examples/{name}_test.png')
         plt.show()
         return None
+    
+
+    def render_framerange(self, movie, frame0, frame1, name):
+        '''
+        Outputs pngs over a provided framerange for the source movie and its depth result.
+        '''
+        data = self.data
+        with torch.no_grad():
+            for frame in range(frame0, frame1):
+                imageLEFT = torch.from_numpy(data[movie][frame,0]).type(torch.cuda.FloatTensor)
+                inputLEFT = torch.div(imageLEFT, 255).permute(2,0,1)
+                output = self.encoderdecoder(inputLEFT.view(-1,3,256,640))
+                result = output[0][0,0,:,:].view(256, 640).cpu().detach().numpy()
+                im_result = (np.clip(result, -.02, .02)+.02)*255*25
+                im_result = im_result.astype(np.uint8)
+                im = Image.fromarray(im_result)
+                im.convert('L')
+                im.save(f'depth_mov/d_{name}_{frame}.png')
+                left = Image.fromarray(data[movie][frame,0].astype(np.uint8))
+                left.save(f'input_mov/{name}_{frame}.png')
 
 
     def train(self):
