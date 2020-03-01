@@ -22,7 +22,7 @@ class trainer_tester:
         self.encoderdecoder = ResnetModel(3).to(self.DEVICE)
         self.optimizer = optim.Adam(self.encoderdecoder.parameters(),lr=0.001)
         self.loss_function = MonodepthLoss(n=4, SSIM_w=0.85, disp_gradient_w=0.1, lr_w=1).to(self.DEVICE)
-        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1582560607'))
+        self.encoderdecoder.load_state_dict(torch.load('state_dicts/encoderdecoder-1583031157'))
         self.data = self.build_data("numpy_img/")
         self.n = 32
         # N is batch number, i.e. number of frames per itteration
@@ -115,7 +115,7 @@ class trainer_tester:
         ax0.imshow(imageLEFT[:,:,:].view(256,640,3).cpu()/255)
 
         ax1 = fig.add_subplot(122)
-        ax1.imshow(b)
+        ax1.imshow(np.clip(result, -.01, .01))
 
         plt.tight_layout()
         ax0.axis('off')
