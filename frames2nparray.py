@@ -48,14 +48,14 @@ class LeftToRight():
                 print(str(e))
                 pass
             j+=1
-            if j == 5000 or i+1 == movie_details[2]:
+            if j == 750 or i+1 == movie_details[2]:
                 k+=1
-                np.save(f"{movie}_wflow-{k}.npy", self.training_data)
+                np.save(f"numpy_flow/{movie}_wflow-{k}.npy", self.training_data)
                 self.training_data.clear()
                 j = 0
         
 if REBUILD_DATA:
-    frame_ends = [['skyscraper', 2000, 7000]]
+    frame_ends = [['hobbit2', 1500, 108150]]
 
 
     lefttoright = LeftToRight()
