@@ -111,6 +111,8 @@ class MonodepthLoss(nn.modules.Module):
             (float): The loss
         """
         left, right = target
+        # CHANGE: remove optic flow for scale processing.
+        left = left[:,2:5,:,:]
         left_pyramid = self.scale_pyramid(left, self.n)
         right_pyramid = self.scale_pyramid(right, self.n)
 

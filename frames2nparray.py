@@ -16,6 +16,29 @@ class LeftToRight():
     box = (0,100,1280,620) # Cropping of movie frames.
 
 
+    def paths_in_npy_out(self, path_LM, path_LN, path_LO, path_R, box, size):
+        try:
+            LN = Image.open(path_LN).crop(box).resize(size, Image.ANTIALIAS)
+            RN = Image.open(path_R).crop(box).resize(size, Image.ANTIALIAS)
+
+            first = cv2.imread(path_LM,  cv2.IMREAD_GRAYSCALE)
+            img = cv2.imread(path_LN,  cv2.IMREAD_GRAYSCALE)
+            last = cv2.imread(path_LO,  cv2.IMREAD_GRAYSCALE)
+            
+            LM_flow = cv2.calcOpticalFlowFarneback(img, first, None, 0.5, 2, 15, 1, 5, 1.1, 0)[100:620, :, :]
+            LO_flow = cv2.calcOpticalFlowFarneback(img, last, None, 0.5, 2, 15, 1, 5, 1.1, 0)[100:620, :, :]
+            LM_flow = cv2.resize(LM_flow, dsize=(640, 256))
+            LO_flow = cv2.resize(LO_flow, dsize=(640, 256))
+
+            LN_flow = np.concatenate((LM_flow, np.array(LN), LO_flow, np.array(RN)), axis=2)
+            return LN_flow
+
+        except Exception as e:
+            print(str(e))
+            return None
+
+
+
     def make_training_data(self, movie_details):
         LEFT = self.LEFT
         RIGHT = self.RIGHT
@@ -26,29 +49,19 @@ class LeftToRight():
         k = 0
         j = 0
         for i in tqdm(range(movie_details[1], movie_details[2])):
-            try:            
-                #Reads in files from directories$ holding 720p frames of left and right stereo images
-                path_LM = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i-1])
-                path_LN = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i])
-                path_LO = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i+1])
-                LN = np.array(Image.open(path_LN).crop(box).resize(size, Image.ANTIALIAS))
-                path_R = os.path.join(RIGHT+movie, os.listdir(RIGHT+movie)[i])
-                RN = Image.open(path_R).crop(box).resize(size, Image.ANTIALIAS)
-                first = cv2.imread(path_LM,  cv2.IMREAD_GRAYSCALE)
-                img = cv2.imread(path_LN,  cv2.IMREAD_GRAYSCALE)
-                last = cv2.imread(path_LO,  cv2.IMREAD_GRAYSCALE)
-                LM_flow = cv2.calcOpticalFlowFarneback(img, first, None, 0.5, 2, 15, 1, 5, 1.1, 0)[100:620, :, :]
-                LO_flow = cv2.calcOpticalFlowFarneback(img, last, None, 0.5, 2, 15, 1, 5, 1.1, 0)[100:620, :, :]
-                LM_flow = cv2.resize(LM_flow, dsize=(640, 256))
-                LO_flow = cv2.resize(LO_flow, dsize=(640, 256))
-                LN_flow = np.concatenate((LM_flow, LN, LO_flow, np.array(RN)), axis=2)
-                self.training_data.append(LN_flow)
-
+            #Reads in files from directories$ holding 720p frames of left and right stereo images
+            path_LM = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i-1])
+            path_LN = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i])
+            path_LO = os.path.join(LEFT+movie, os.listdir(LEFT+movie)[i+1])
+            path_R = os.path.join(RIGHT+movie, os.listdir(RIGHT+movie)[i])
+            try:
+                self.training_data.append(self.paths_in_npy_out(path_LM, path_LN, path_LO, path_R, box, size))
             except Exception as e:
                 print(str(e))
                 pass
+
             j+=1
-            if j == 750 or i+1 == movie_details[2]:
+            if j == 700 or i+1 == movie_details[2]:
                 k+=1
                 np.save(f"numpy_flow/{movie}_wflow-{k}.npy", self.training_data)
                 self.training_data.clear()
