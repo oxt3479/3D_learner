@@ -143,19 +143,22 @@ class trainer_tester:
         with torch.no_grad():
             for frame in range(frame0, frame1):
                 imageLEFT = torch.from_numpy(data[movie][frame,:,:,0:7]).type(torch.cuda.FloatTensor)
-                inputLEFT = torch.div(imageLEFT, 255).permute(2,0,1)
+                imageLEFT[:,:,0:2] = torch.div(imageLEFT[:,:,0:2], torch.mean(abs(imageLEFT[:,:,0:2]))*2)
+                imageLEFT[:,:,2:5] = torch.div(imageLEFT[:,:,2:5], 255)
+                imageLEFT[:,:,5:7] = torch.div(imageLEFT[:,:,5:7], torch.mean(abs(imageLEFT[:,:,5:7]))*2)
+                inputLEFT = imageLEFT.permute(2,0,1)
                 output = self.encoderdecoder(inputLEFT.view(-1,7,256,640))
                 result = output[0][0,0,:,:].view(256, 640).cpu().detach().numpy()
                 im_result = (np.clip(result, -.02, .02)+.02)*255*25
                 im_result = im_result.astype(np.uint8)
                 im = Image.fromarray(im_result)
                 im.convert('L')
-                im.save(f'depth_mov/d_{name}_{frame}.png')
                 left = Image.fromarray(data[movie][frame,:,:,2:5].astype(np.uint8))
-                left.save(f'input_mov/{name}_{frame}.png')
+                im.save(f'depth_mov/d_{name}_{frame:05}.png') 
+                left.save(f'input_mov/{name}_{frame:05}.png')
                 if name == 'optic':
                     flow = data[movie][frame,:,:,5] + 20
-                    Image.fromarray(flow.astype(np.uint8)).save(f'input_mov/0_{name}_{frame}.png')
+                    Image.fromarray(flow.astype(np.uint8)).save(f'input_mov/0_{name}_{frame:05}.png')
 
 
     def train(self):
@@ -200,12 +203,12 @@ def main():
         network = trainer_tester(sys.argv[1])
     else:
         network = trainer_tester()
-    try:
-        network.render_framerange(int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), sys.argv[5])
-        print('Framerange rendered')
-    except:
-        print('~~~TRAINING NETWORK~~~')
-        network.train()
+    #try:
+    network.render_framerange(int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), sys.argv[5])
+    print('Framerange rendered')
+    #except:
+     #   print('~~~TRAINING NETWORK~~~')
+      #  network.train()
 
 if __name__ == "__main__":
     main()
