@@ -1,4 +1,3 @@
-# %%
 import os
 import cv2
 import numpy as np
@@ -38,7 +37,6 @@ class LeftToRight():
             return None
 
 
-
     def make_training_data(self, movie_details):
         LEFT = self.LEFT
         RIGHT = self.RIGHT
@@ -66,9 +64,10 @@ class LeftToRight():
                 np.save(f"numpy_flow/{movie}_wflow-{k}.npy", self.training_data)
                 self.training_data.clear()
                 j = 0
-        
+
+
 if REBUILD_DATA:
-    frame_ends = [['hobbit2', 1500, 108150]]
+    frame_ends = [['prometh', 0, -1]]
 
 
     lefttoright = LeftToRight()
